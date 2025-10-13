@@ -1,0 +1,1779 @@
+---
+title: "Introduction to Quantitative Analysis in R"
+author: "Dr Maria Korochkina"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    toc: true
+    toc_depth: 5
+fontsize: 16pt
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r, results = "hide", message = F, warning = F, echo = FALSE}
+rm(list=ls())
+
+library("tidyverse")
+
+# set directory to source file location
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+```
+
+# The basics
+
+## R as a calculator
+
+The simplest thing you could do with R is arithmetic:
+
+```{r}
+7 + 1
+567*208
+```
+
+If you type an incomplete command, R will wait for you to complete it. The order of the operations is the same as what you would have learned in school (from highest to lowest precedence: parentheses, exponents, multiplication, division, addition, subtraction).
+
+```{r}
+13 + 5 * 2 # multiplication takes precedence over addition
+(13 + 5) * 2
+```
+
+The text following the hash symbol is called a "comment", and it is ignored when R executes code.
+
+Really small or large numbers get a scientific notation:
+
+```{r}
+1/100000000
+```
+
+It is convenient, but you can turn this off if you don't like it:
+
+```{r}
+options(scipen = 999)
+1/100000000
+```
+
+R also has lots of built-in mathematical functions:
+
+```{r}
+log(1) # natural logarithm
+log10(1) # base-10 logarithm
+exp(3) # exponent
+```
+
+You don't need to learn all the functions by heart, you can always look them up on Google, or, if you can remember the function's name but not how to use it (i.e., which arguments it takes), you can use the R documentattion, like so:
+
+```{r}
+?exp()
+```
+
+R also has all the usual operators to do comparisons:
+
+```{r}
+1 == 1 # equality
+1 != 1 # inequality
+1 > 2 # greater than
+5 <= 10 # less than or equal to
+
+```
+
+## Variables and assignment
+
+That's all great but, in the end, we do not use R because we want a better calculator, so let's look at things that make R so unique.
+
+We can store values in variables using the assignment operator, like so:
+
+```{r}
+a <- 5
+a
+
+(b <- 5*12)
+```
+
+If you now look at the Environment tab in the top right panel, you will see that `a` and `b` and their respective values now appear there. These variables can also be used in place of numbers in any calculation that expects a number:
+
+```{r}
+log(a)
+```
+
+Variables can also be changed and reassigned:
+
+```{r}
+a <- 50
+b <- b*3 + 12 # notice how the variable content is updated in the Environment
+```
+
+One important thing to be careful about is how you name your variables. Variable names in R can include letters, numbers, underscores, and periods, but not spaces or most special characters. They must also begin with a letter.
+
+It's a good idea to choose descriptive names, that is, names that make sense and are easy to understand, both for your future self and for anyone else reading your code. For example, if you're storing the sum of a column in a variable, calling it `cs` isn't very intuitive, while `column_sum` might feel a bit long. A name like `col_sum`, however, might be a good balance between clarity and brevity.
+
+One final thing to know about variables in R is that they are all **vectorised**. A vector in R is an ordered collection of values of the same data type, and every variable is interpreted as a vector. If a variable contains only a single element (like `a` or `b`), R simply treats it as a vector of length one.
+
+To create a variable (vector) with several elements, we can do the following:
+
+```{r}
+my_vec <- c(1,2,3,4,5)
+my_vec <- c(1:5)
+```
+
+Why is it important that R is vectorised, and what does that mean in practice? It means that when you want to apply a transformation to each element of a vector, R does this automatically, so there's no need for explicit loops or extra syntax, like in many other programming languages. For example:
+
+```{r}
+my_vec_squared <- my_vec^2
+my_vec_squared
+```
+
+This makes R code more concise and efficient. Instead of writing a loop to go through each element one by one, you can just write the operation once, and R applies it to the whole vector. We will see later in the session why this is so powerful when analysing data.
+
+## Data types
+
+There are 5 main types of data in R: numeric (also called double), integer, complex, logical and character.
+
+A **double** is a data type used to store numeric variables with decimals, and it's the default way R represents real numbers:
+
+```{r}
+typeof(3.156)
+typeof(10)
+```
+
+If you want to force a number to be treated as an **integer** (i.e., a whole number, without decimals), you add an `L`:
+
+```{r}
+typeof(10L)
+```
+
+A **complex** data type is used to store complex numbers, i.e., numbers with both a real and an imaginary part (a number that is built using the special unit $i$):
+
+```{r}
+z <- 2 + 3i
+typeof(z)
+```
+
+A **logical** (or **boolean**) data type is a type of value that can only be TRUE or FALSE. These values are commonly used in comparisons, conditions, and logical operations in programming and data analysis:
+
+```{r}
+result <- 3 > 2
+result
+typeof(result)
+```
+
+Finally, a **character** data type is used to store text (letters, words, or any string of characters). Characters are always enclosed in single or double quotes and can contain letters, numbers, symbols, or spaces:
+
+```{r}
+x <- "Hello, world!"
+y <- "1234"
+
+typeof(x)
+typeof(y)
+```
+
+No matter how complicated our analyses become, all data in R are interpreted as one of these basic data types. This strictness has some really important consequences. For example, if you create a variable that looks like a number but is actually stored and interpreted as a character, R will not be able to perform mathematical operations on it:
+
+```{r, error = T}
+weight_kg <- "75"
+weight_kg + 2
+```
+
+That's it for data types. Of course, we rarely work with individual variables in R; we typically group these data types into data structures. We'll spend the remainder of this lesson looking at how to create, manage, and manipulate these data structures. But before we dive in, let's review how to manage our working environment in R.
+
+## Managing your environment
+
+There are a few useful commands you can use to interact with the R session. `ls` will list all of the variables and functions stored in the global environment:
+
+```{r}
+ls()
+```
+
+You can use `rm()` to delete objects you no longer need:
+
+```{r}
+rm(y)
+```
+
+If you want to delete all variables in your environment, you can pass the results of the `ls()` command to the `rm()` function. It's a good idea to do this at the start of each script to make sure there are no leftover or irrelevant variables that could interfere with your work:
+
+```{r}
+rm(list = ls())
+```
+
+### Packages
+
+Base R includes many useful functions (in fact, all the functions we've used so far come from base R). However, functions for more specialised tasks are often found in packages. All packages are available for download from the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/), and there are tens of thousands of packages to choose from.
+
+- You can see what packages are installed by typing `installed.packages()`;
+
+- You can install packages by typing `install.packages("packagename")`, where `packagename` is the package name, in quotes;
+
+- You can update installed packages by typing `update.packages()`;
+
+- You can remove a package with `remove.packages("packagename")`;
+
+- You can load installed packages with `library("packagename")`.
+
+It's a good idea to load all the necessary packages at the beginning of your script.
+
+### Working directory
+
+The working directory (WD) is the folder on your computer where R will look for files (like datasets) and save outputs (like plots or CSVs). It's important to know where your WD is and how to manage it, especially when sharing scripts or working on multiple machines.
+
+To see your current working directory (path of the folder where R is currently operating), you can use:
+
+```{r}
+getwd()
+```
+
+You can change the working directory using `setwd()` (note that, for Windows paths, you'll need to use forward slashes instead of backslashes).
+
+When setting a working directory, it's good practice to **use relative paths instead of absolute paths**. An **absolute** path specifies the full location from the root of your computer, but the problem with absolute paths is that they break if you move your project to another folder or computer, and they won't work for a different user.
+
+A **relative** path, on the other hand, is specified relative to your working directory (e.g., `data/data.csv`). Using relative paths makes your scripts portable, so anyone with the project folder can run your code without needing to change paths. For this reason, it's best to avoid hardcoding absolute paths unless absolutely necessary.
+
+It's a good idea to set your working directory at the start of each script using something like:
+
+```{r}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+```
+
+This command sets the working directory to the folder where the script you are currently working on is located. To keep your project organised, you should structure this folder into subfolders, such as `data/`, `scripts/`, and `outputs/`. Then you can use relative paths to access the different components of your project, making your code portable and easier to manage.
+
+# Data frames
+
+A data frame is a table-like data structure in R used to store datasets. It can hold multiple variables (columns), and each column can be a different data type (numeric, character, logical, etc.), but all elements in a single column must be of the same type.
+
+A data frame is similar to a spreadsheet: rows represent observations and columns represent variables. Data frames can be created using the `data.frame()` function:
+
+```{r}
+df <- data.frame(
+  Name = c("Alice", "Bob", "Charlie"),
+  Age = c(25, 30, 22),
+  Passed = c(TRUE, FALSE, TRUE))
+df
+```
+
+We can access columns with `$` or `[ ]`:
+
+```{r}
+df$Age
+df[1]
+```
+
+We can access rows or subsets of the data frame with `[row, column]`:
+
+```{r}
+# first row, all columns
+df[1, ] 
+# all rows, "Name" column
+df[, "Name"]
+```
+
+A data frame is one of the most commonly used data structures in R, can have any number of rows and columns, and can grow dynamically. Most R functions for statistics, plotting, and data manipulation are designed to work with data frames.
+
+You can add a column by using `$` or `cbind()`:
+
+```{r}
+df$Maths_score <- c(90, 85, 88)
+df
+
+# or
+df <- cbind(df, Biology_score = c(88, 90, 60))
+df
+```
+
+You can add a row by using `rbind()`:
+
+```{r}
+new_row <- data.frame(Name = "David", Age = 28, Passed = TRUE, Maths_score = 92, Biology_score = 76)
+df <- rbind(df, new_row)
+df
+```
+
+There are thousands of functions available in R to manipulate data frames. Here are a few examples to illustrate some common operations:
+
+```{r}
+# select specific columns
+(df[, c("Name", "Age")])
+
+# filter rows based on a condition
+(df[df$Passed == TRUE, ])
+
+# add a new calculated column
+(df$AgeNextYear <- df$Age + 1)
+
+# sort the data frame by Age
+(df[order(df$Age), ])
+
+# compute number of rows
+nrow(df)
+# compute number of columns
+ncol(df)
+
+# print first 6 rows
+head(df)
+# print last 6 rows
+tail(df)
+
+# inspect structure of a data frame
+str(df)
+
+# summary statistics for each column
+summary(df)
+
+# compute mean of a column
+mean(df$Age)
+
+# find the largest number in a column
+max(df$Maths_score)
+```
+
+## Manipulating data frames with `tidyr` and `dplyr`
+
+Ideally, you want to design your experiment (or project) so that when you obtain your data file, it already has the structure you need and is ready for analysis. In practice, though, this isn't always possible: for example, you might be working with data collected by someone else, where you had no influence on the setup, or you might later realise that changes are needed for a specific analysis. R offers many packages to help with this kind of data cleaning and restructuring, and two of the most useful are `tidyr` and `dplyr`.
+
+```{r}
+# make sure to install the package first, if you haven't already
+library("tidyr")
+```
+
+Typically, most datasets are structured in one of two ways: *wide* format or *long* format. A **long format** dataset means that:
+
+- each column represents a variable, and
+
+- each row represents an observation.
+
+In this type of dataset, the first column often serves as an ID variable, while the remaining columns contain the observed variables.
+
+By contrast, in **wide format**, each row usually corresponds to one participant (ID), with multiple observation variables spread across the columns. Wide-format datasets often feel easier for humans to read, since long-format datasets can become very lengthy. However, most computer programs (including many R functions) only work with long-format data. It is therefore important to know how to transform data between wide and long formats, depending on your analysis needs. 
+
+Let's look at the data frame we just created, `df`. The columns `Math_score` and `Biology_score` are an example of a wide-format dataset because each row contains two pieces of information for each student: their score in maths and their score in biology. In a long-format dataset, each student would instead have two rows: one for their biology score and one for their maths score. We can create this long format using `tidyr`’s function `pivot_longer()`:  
+
+```{r}
+df_long <- df %>%
+  pivot_longer(cols = ends_with("_score"), names_to = "Subject", values_to = "Score")
+df_long
+```
+
+`%>%` is a special operator in the `tidyr` package that lets you pass objects to functions and helps you make your code more readable. It's called the **pipe operator**.
+
+As you can see, the new `df_long` data frame is twice as long as the original one, because each student now has two rows. The only difference between the two rows is whether the score belongs to maths or to biology. We can make the dataset prettier by editing the `Subject` column:  
+
+```{r}
+df_long$Subject <- sub("_.*", "", df_long$Subject)
+df_long
+```
+
+The code above removes all characters in the `Subject` column that match the underscore and any sequence of characters that follow it.
+
+If we needed to convert this back to wide format, we can use the function `pivot_wider()`:
+
+```{r}
+df_wide <- df_long %>%
+  pivot_wider(names_from = Subject, values_from = Score)
+df_wide
+```
+
+There are lost of other useful functions in the `tidyr` package. To name just a few examples:
+
+The function `separate()` splits a column into multiple columns based on a separator:
+
+```{r}
+df$Lit_score <- c("Lit_70","Lit_NA", "Lit_80", "Lit_91")
+df_separate_lit <- separate(df, col = "Lit_score", into = c("Subject", "Score"), sep = "_")
+df_separate_lit
+```
+
+By contrast, the function `unite()` combines multiple columns into a single column:
+
+```{r}
+df_unite_lit <- unite(df_separate_lit, col = "Subject_score", Subject, Score, sep = "_")
+df_unite_lit
+```
+
+Other very useful functions include `drop_na()`, `replace_na()`, `nest()`, and `unnest()`. We won't have time to cover these today, but I recommend exploring them at your leisure (see [here](https://cran.r-project.org/web/packages/tidyr/index.html)).
+
+Now that our data is in the format we need, let's explore how we can manipulate the data frame using the `dplyr` package.
+
+```{r}
+# make sure to install the package first, if you haven't already
+library("dplyr")
+```
+
+One useful function is `select()` and it allows you to choose specific columns from a data frame:
+
+```{r}
+df %>% select(Name, Maths_score)
+```
+
+We can also use this function to remove unnecessary columns:
+
+```{r}
+# remove the Lit_score column from df
+df <- df %>%
+  select(-Lit_score)
+df
+```
+
+We can filter rows based on conditions using `filter()`:
+
+```{r}
+# students who passed
+df %>%
+  filter(Passed == TRUE)
+
+# students older than 25
+df %>%
+  filter(Age > 25)
+```
+
+We can sort rows based on values of a specific column using `arrange()`:
+
+```{r}
+# sort df by Maths_score in a descending order
+df %>%
+  arrange(desc(Maths_score))
+```
+
+Count rows by group using `count()`:
+
+```{r}
+# number of students who passed or failed
+df %>%
+  count(Passed)
+```
+
+Add new columns or modify existing columns using `mutate()`:
+
+```{r}
+# create an average score for Maths and Biology
+df %>%
+  mutate(Average_Score = (Maths_score + Biology_score) / 2)
+```
+
+Aggregate data by groups using `summarise()` and `group_by()`:
+
+```{r}
+# average Maths score across all students
+df %>%
+  summarise(Average_Maths = mean(Maths_score))
+
+# average score by Pass status
+df %>%
+  group_by(Passed) %>%
+  summarise(Average_Maths = mean(Maths_score),
+            Average_Biology = mean(Biology_score))
+```
+
+As you have probably noticed in the examples below, the pipe operator can be used to combine functions:
+
+```{r}
+df_long %>%
+  filter(Subject == "Maths", Passed == TRUE) %>%
+  summarise(Average_Maths = mean(Score))
+```
+
+You can also extract top/bottom rows using the `slice_min()` and the `slice_max()` functions:
+
+```{r}
+# top 2 students by Maths score
+df %>%
+  slice_max(Maths_score, n = 2)
+```
+
+Or you can select distinct values using `distinct()`:
+
+```{r}
+# get distinct ages
+df %>%
+  distinct(Age)
+```
+
+These are the functions you will probably use most of the time when doing your own data analysis. However, they are not all the functions that `dplyr` provides, so I recommend checking out the [documentation](https://cran.r-project.org/web/packages/dplyr/index.html) to learn more.  
+
+As a final note, you can either install and use the `tidyr` and `dplyr` packages separately, or you can install and load the `tidyverse` package. The `tidyverse` includes both of these packages, as well as `ggplot2`, which is the go-to package for data visualisation. Personally, I almost always use `tidyverse` because it saves time and space, and I don't need to load each package individually.
+
+```{r}
+library("tidyverse")
+```
+
+# Loading data
+
+So far, we've been working with a data frame that we created ourselves. In practice, most of the time you'll be loading data into R from an Excel or a .csv file. Sometimes you might want to load a dataset, clean it using the `tidyverse` functions, and then save the cleaned dataset. 
+
+This is very easy to do in R! It's best to keep your dataset either in your working directory or in a subfolder named `data` within your working directory. Assuming your files are organised this way:
+
+```{r}
+rm(list=ls())
+# using base R
+data <- read.csv("data/titanic_dataset.csv", 
+                 fileEncoding = "UTF-8-BOM", stringsAsFactors = TRUE)
+
+# or
+library("readr")
+data <- read_csv("data/titanic_dataset.csv")
+```
+
+Note that we set `stringsAsFactors = TRUE` so that all character columns are automatically converted to factors (i.e., categorical variables with defined levels). This is useful for statistical analysis, modeling, and plotting of categorical variables.  
+
+If your dataset is in a different format, we can handle it like this:
+
+```{r}
+# for Excel
+library("readxl")
+data <- read_excel("data/titanic_dataset.xlsx")
+
+# for tab-separated files
+data <- read.table("data/titanic_dataset.txt", header = TRUE, sep = "\t",
+                     fileEncoding = "UTF-8-BOM", stringsAsFactors = TRUE)
+```
+
+Alternatively, we can load a dataset directly from a GitHub repository (this is where I found the Titanic dataset): 
+
+```{r}
+url <- "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+data <- read.csv(url)
+```
+
+Easy!
+
+# Descriptive statistics
+
+A crucial first step in any analysis is to inspect the dataset to ensure it looks as expected and to examine its main features. The statistics used to summarise these features are called **descriptive statistics**. Unlike inferential statistics, they do not allow us to draw conclusions beyond the dataset, but they are essential for detecting anomalies, missing data, and overall patterns.
+
+Let's take a look at the dataset we've just loaded:
+
+```{r}
+head(data)
+str(data)
+```
+
+For numeric variables, descriptive statistics usually include measures of central tendency (mean, median, mode) and measures of dispersion (range, standard deviation). 
+
+For categorical variables, distributions are typically summarised using counts and proportions.
+
+The `summary()` function provides a quick overview of descriptive statistics for all variables in a dataset:
+
+```{r}
+summary(data)
+```
+
+We can also use this function to examine the variables individually:
+
+```{r}
+summary(data$Age)
+```
+
+For instance, passenger ages range from 0.42 to 80 years, with a mean of 29.7 years. The median (28 years) is reasonably close to the mean. We also see 177 cases with missing age information, marked as `NA`.
+
+There are, of course, alternative ways to extract these statistics:
+
+```{r}
+# mean
+mean(data$Age, na.rm = TRUE) # don't forget to remove the NAs!
+
+# median
+median(data$Age, na.rm = TRUE)
+
+# standard deviation
+sd(data$Age, na.rm = TRUE)
+
+# range
+range(data$Age, na.rm = TRUE)
+```
+
+Unlike `mean()` or `median()`, R does not have a built-in function for the statistical mode (the most frequent value) but we can define it manually using functions from `dplyr`:
+
+```{r}
+data %>%
+  filter(!is.na(Age)) %>% # remove NAs
+  dplyr::count(Age) %>% # count observations in each group
+  filter(n == max(n)) # keep the row with the highest number of obs
+```
+
+Apparently, the most common age is 24, as 30 passengers reported this age. As an aside, if you only need the age value itself (and not the frequency), you can edit the code like this:
+
+```{r}
+data %>%
+  filter(!is.na(Age)) %>%
+  dplyr::count(Age) %>% 
+  filter(n == max(n)) %>%
+  pull(Age) # keep only the Age column
+```
+
+For categorical variables, a useful function is `table()`:
+
+```{r}
+table(data$Sex)
+table(data$Survived)
+table(data$Sex, data$Survived)
+```
+
+A table like the one above is called a **contingency table**. It shows the counts of observations for each combination of categories across two variables, allowing us to examine their relationship.
+
+You can achieve the same result using `dplyr()` functions:
+
+```{r}
+data %>%
+  count(Sex, Survived)
+```
+
+Finally, let's try and visualise these variables to *see* how they are distributed. We can start by using functions from base R:
+
+```{r}
+# histogram
+hist(data$Age, xlab = "Age", col = "lightblue", breaks = 20)
+
+# density plot
+plot(density(data$Age, na.rm = TRUE), main = "Density plot of Age", 
+     xlab = "Age", col = "blue", lwd = 2)
+```
+
+Alternatively, we can use functions from the `ggplot2` package. We'll cover this package extensively in the *Intro to Data Visualisation* session, but it's worth taking a look now, as it's considered the gold standard for visualisation in R. In practice, we rarely use base R for plotting because `ggplot2` is much more flexible and produces prettier plots.
+
+```{r}
+# histogram
+ggplot(data, aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Age", x = "Age", y = "Count") +
+  theme_classic()
+
+# density plot
+ggplot(data, aes(x = Age)) +
+  geom_density(fill = "lightblue", alpha = 0.5) +
+  labs(title = "Density plot of Age", x = "Age", y = "Density") +
+  theme_classic()
+```
+
+We can also create density plots to compare distributions of age across males and females and survival status:
+
+```{r}
+# sex and age
+ggplot(data, aes(x = Age, fill = Sex)) +
+  geom_density(alpha = 0.5, na.rm = TRUE) +
+  labs(title = "Age by Sex",
+       x = "Age",
+       y = "Density") +
+  theme_classic()
+
+# survival status and age
+data$Survived <- as.factor(data$Survived)
+ggplot(data, aes(x = Age, fill = Survived)) +
+  geom_density(alpha = 0.5, na.rm = TRUE) +
+  labs(title = "Age by Survival Status",
+       x = "Age",
+       y = "Density") +
+  theme_classic()
+```
+
+What about sex by survival?
+
+```{r}
+# stacked bar plot
+ggplot(data, aes(x = Sex, fill = Survived)) +
+  geom_bar(position = "stack") +
+  labs(title = "Survival by Sex",
+       x = "Sex",
+       y = "Number of passengers") +
+  theme_classic()
+
+# proportional bar plot
+ggplot(data, aes(x = Sex, fill = Survived)) +
+  geom_bar(position = "fill") +
+  labs(title = "Survival by Sex",
+       x = "Sex",
+       y = "Percentage of passengers") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_classic()
+
+# side-by-side + customisation
+ggplot(data, aes(x = Sex, fill = Survived)) +
+  geom_bar(position = position_dodge(width = 0.9)) +
+  # customise colours
+  scale_fill_brewer(palette = "Set2",
+                    labels = c("0" = "Did not survive", 
+                               "1" = "Survived")) +
+  # add numbers for each bar
+  geom_text(stat = "count", 
+            aes(label = ..count..), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.5) +
+  labs(title = "Survival by Sex",
+       x = "Sex",
+       y = "N passengers",
+       fill = "Survival") +
+  # add 10% headroom
+   expand_limits(y = max(table(data$Sex, data$Survived)) * 1.1) +
+  theme_classic()
+```
+
+These simple plots clearly demonstrate that, in most cases, there's nothing more effective for understanding your data than well-designed, informative visualisations!
+
+# Chi-square tests
+
+Examining your dataset is an important first step, but we also want to know whether the differences we observe are meaningful or simply due to chance. Often, we also want to make conclusions that go beyond the sample to the broader population, and this is where **inferential statistics** come in.
+
+The type of inferential test you use depends on the variables you are comparing. For categorical variables, a commonly used test to examine their relationship is the **chi-square test**.
+
+A chi-square test is based on a contingency table (like the one we created above). The null hypothesis assumes that the variables are independent, while the alternative hypothesis assumes they are related. The test compares the observed counts in the table with the expected counts, i.e., the counts we would expect if the variables were truly independent. If the differences are large enough, the resulting chi-square statistic will indicate a statistically significant relationship:
+
+$$
+\chi^2 = \sum \frac{(O - E)^2}{E}
+$$
+
+Here,
+
+- $O$ represents the observed counts, and
+
+- $E$ is the counts expected under the null hypothesis
+
+We can use a chi-square test to examine whether survival is related to gender, a relationship that may already appear evident from the plot above.
+
+```{r}
+# create contingency table first
+cont_table <- table(data$Sex, data$Survived)
+# apply test to the table
+chisq.test(cont_table)
+```
+
+In this output, 
+
+- *Pearson's Chi-squared test with Yates' continuity correction* means that a small correction is applied to the standard chi-square test to make it more conservative and reduce the risk of overestimating significance. The interpretation of the p-value and the conclusion about independence remain the same;
+
+- the chi-squared statistic $\chi^2$ measures how far the observed counts are from the expected counts, and
+
+- the p-value indicates whether the association is statistically significant. 
+
+If the p-value is very small (like in this case), we can reject the null hypothesis and conclude that survival is significantly associated with passenger sex. We can see that females were more likely to survive than males, which aligns with historical accounts of the Titanic evacuation ("women and children first").
+
+# T-tests
+
+When the variables at hand are numerical, you can use a **t-test** to compare the means of two groups to determine if they are significantly different. This test considers the difference in group means, the variability within each group, and the sample size.
+
+The main types of t-tests are:
+
+- the **one-sample t-test**, which compares the mean of a single sample to a known or hypothesised population mean (e.g., whether the average test score in one class is different from the national average);
+
+- the **paired samples t-test**, which compares two measurements from the same group or participant (e.g., blood pressure before vs. after treatment, or pupils' reading fluency before vs. after an intervention); and 
+
+- the **independent samples t-test** (also called the **two-sample t-test**), which compares measurements across two separate groups (e.g., in the Titanic dataset we've been using, the average age of survivors vs. non-survivors, or the ticket fare of passengers travelling in first vs. second class).
+
+Another important distinction concerns the direction of the test. Sometimes we want to test whether one mean is specifically greater (or smaller) than the other — this is called a **one-tailed t-test**. Other times, we want to test whether the means differ in either direction, without specifying which group is larger — this is called a **two-tailed t-test**.
+
+The plot below visualises rejection regions for one-tailed and two-tailed hypothesis tests using a standard normal distribution.
+
+```{r, echo=F}
+# simulate data from a standard normal distribution
+x <- seq(-4, 4, length.out = 500)
+y <- dnorm(x, mean = 0, sd = 1)
+df <- data.frame(x, y)
+
+# alpha level
+alpha <- .05
+
+# critical values
+z_crit_two <- qnorm(1 - alpha/2) # two-tailed
+z_crit_one <- qnorm(1 - alpha) # one-tailed (right-tailed)
+
+# Plot
+ggplot(df, aes(x, y)) +
+  geom_line(lwd = 1.2) +
+  
+  # shade two-tailed rejection regions
+  geom_area(data = subset(df, x <= -z_crit_two), aes(y = y), fill = "red", alpha = 0.4) +
+  geom_area(data = subset(df, x >= z_crit_two), aes(y = y), fill = "red", alpha = 0.4) +
+  
+  # shade one-tailed rejection region (right side)
+  geom_area(data = subset(df, x >= z_crit_one), aes(y = y), fill = "blue", alpha = 0.4) +
+  
+  # add dashed vertical lines
+  geom_vline(xintercept = c(-z_crit_two, z_crit_two), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = z_crit_one, linetype = "dashed", color = "blue") +
+  
+  labs(title = "One-tailed vs. two-tailed t-tests (standard normal distribution)",
+       x = "Test statistic (z)", 
+       y = "Probability density") +
+  theme_classic()
+```
+
+The black curve is the *standard normal distribution* (mean 0, standard deviation 1), and the plot shows the probability density of different z-values for a standard normal variable.
+
+The red shaded regions on the far left and right represent the two-tailed rejection regions at an alpha level of 0.05. If a test statistic falls in these regions (beyond the red dashed lines), it is considered statistically significant for a two-tailed test. The blue shaded region on the far right shows the one-tailed rejection region at the same alpha level.
+
+## One-sample t-test
+
+The formula for the test statistic in the one-sample t-test is:
+
+$$
+t = \frac{\bar{X} - \mu_0}{s / \sqrt{n}}
+$$
+
+In this formula,
+
+- $\bar{X}$ is the sample mean,  
+- $\mu_0$ is hypothesised population mean (the value we are testing against),  
+- $s$ is the sample standard deviation,  
+- $n$ is the sample size, and  
+- $\frac{s}{\sqrt{n}}$ is the standard error of the mean.
+
+ If the p-value is less than .05 (typically for t-values greater than 2), we can reject $H_0$ and assume that the sample mean is significantly different from $\mu_0$. Otherwise, we fail to reject $H_0$ and assume that the sample mean does not differ significantly from $\mu_0$.  
+ 
+Applied to the Titanic dataset, we can use a one-sample t-test to examine whether the average age of passengers differs from 50 years. This is a two-tailed t-test, because we are not specifically testing whether passengers are younger or older than 50; we simply want to determine if their average age is different from 50.
+
+```{r}
+ages <- data %>% 
+  pull(Age) %>% 
+  na.omit()
+
+t.test(ages, mu = 50, alternative = "two.sided")
+```
+
+The result is statistically significant, indicating that the average age of passengers differs from 50 years.
+
+Next, we can run a one-tailed t-test to test whether the average age of passengers is significantly less than 35 years:
+
+```{r}
+t.test(ages, mu = 35, alternative = "less")
+```
+
+This test is also significant, because the average age of passengers is approximately 30 years, which is indeed less than 35.
+
+The **confidence interval** `-Inf, 30.59` tells us that if we were to repeat this study many times, 95% of the time the intervals we calculate in this way would contain the true population mean (i.e., the true mean would fall below the upper bound of 30.59). Importantly, this does not mean we can be 95% confident that the true mean age is less than or equal to 30.59 years. Saying so would be a common misinterpretation of confidence intervals. A confidence interval refers to the long-run behaviour of the sampling procedure, not the probability of the parameter lying in a specific interval after the data are observed.
+
+## Paired samples t-test
+
+The paired samples t-test works in a similar way: 
+
+$$
+t = \frac{\bar{D}}{s_D / \sqrt{n}}
+$$
+
+Here,
+
+- $\bar{D}$ is the mean of the differences between the two measurements,
+
+- $s_D$ is the standard deviation of those differences, and
+
+- $n$ is the number of paired observations (i.e., if we have "before" and "after" measurements for 20 participants, we will have 20 paired observations).  
+
+The null hypothesis here is that the mean difference $\bar{D}$ is zero, and the $t$ statistic measures how far the average difference is from zero in units of standard error.
+
+In the Titanic dataset, all variables are independent across individuals, so there aren't natural pairs to compare for the same passenger. However, we can simulate paired data to demonstrate how a paired-samples t-test works.
+
+```{r}
+set.seed(123)
+
+# Simulate paired data for 20 participants
+n <- 20
+# Imagine that, for each participant, we measure something "before" and "after" treatment
+before <- rnorm(n, mean = 30, sd = 5) 
+after <- before + rnorm(n, mean = 2, sd = 3)
+
+# Create a data frame
+paired_df <- data.frame(
+  SubjID = 1:n,
+  before = before,
+  after = after)
+
+head(paired_df)
+```
+
+Let's take a quick look at these simulated measurements:
+
+```{r}
+# Reshape data to long format for plotting
+long_df <- paired_df %>%
+  pivot_longer(cols = c(before, after),
+               names_to = "time",
+               values_to = "measurement")
+
+# Density plot
+ggplot(long_df, aes(x = measurement, fill = time)) +
+  geom_density(alpha = 0.4) +
+  scale_fill_manual(values = c("before" = "red", "after" = "blue"),
+                    labels = c("Before", "After")) +
+  labs(x = "Measurement", y = "Density", fill = "Time") +
+  theme_classic()
+```
+
+We are now ready to run a two-tailed paired samples t-test: 
+
+```{r}
+t.test(paired_df$before, paired_df$after, paired = TRUE, alternative = "two.sided")
+```
+
+The paired t-test found a significant difference from zero. Another way to perform the same test is to compute the difference between the "after" and "before" measurements for each participant, and then run a one-sample t-test on this difference:
+
+```{r}
+paired_df$diff <- paired_df$before - paired_df$after
+t.test(paired_df$diff, mu = 0, alternative = "two.sided")
+```
+
+Same result! This nicely demonstrates how a paired-samples t-test is equivalent to a one-sample t-test on the differences between the two groups.
+
+## Independent samples t-test
+
+Let's first take a look at the formula:
+
+$$
+t = \frac{\bar{X}_1 - \bar{X}_2}{\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}}
+$$
+
+It may look a bit more complex than the formulas for the previous t-tests, but if we examine it closely, it is still quite similar. Here:
+
+- $\bar{X}_1$ and $\bar{X}_2$ are the sample means of groups 1 and 2,
+
+- $s_1^2$ and $s_2^2$ are the sample variances (sd squared) of groups 1 and 2, and
+
+- $n_1$ and $n_2$ are sample sizes of the two groups. 
+
+For an independent samples t-test, the null hypothesis is that the means of the two groups are equal: $\bar{X}_1 = \bar{X}_2$. The $t$ statistic measures how many standard errors apart the two means are. If the p-value is less than 0.05, we can reject the null hypothesis and conclude that the difference is statistically significant.
+
+Let's test if there is a difference in age between those who survived and those who did not in the Titanic dataset:
+
+```{r}
+# remove rows where age is NA and store as a new dataset
+data_age <- data[!is.na(data$Age), ]
+t.test(Age ~ Survived, data = data_age)
+```
+
+It appears we can just about reject the null hypothesis of no difference: on average, passengers who did not survive were roughly 2 years older than those who did.
+
+We can also compare differences in fare between first and second class passengers using an independent samples t-test:
+
+```{r}
+t.test(Fare ~ Pclass, data = data[data$Pclass %in% c(1,2), ])
+```
+
+Looks like we have a huge difference here! Let's visualise this:
+
+```{r}
+# subset data for first and second class only
+titanic12 <- data[data$Pclass %in% c(1,2), ]
+
+# plot
+ggplot(titanic12, aes(x = Fare, fill = factor(Pclass))) +
+  geom_density(alpha = 0.6, na.rm = TRUE) +
+  scale_fill_brewer(palette = "Set2", 
+                    name = "Passenger Class", 
+                    labels = c("1" = "First Class", "2" = "Second Class")) +
+  labs(title = "Fare by Class",
+       x = "Fare",
+       y = "Density") +
+  theme_classic()
+```
+
+You may have noticed that the output says *Welch Two Sample t-test* and wondered what this means.
+
+The **Welch t-test** is a version of the two-sample t-test that does not assume equal variances between the two groups. It was named after the statistician Bernard Lewis Welch, who developed this version of the t-test to handle unequal variances. In contrast, the classical **Student's t-test** (introduced by William Sealy Gosset, who published under the pseudonym Student) assumes that both groups have the same variance.
+
+Using Welch's test is generally safer in practice, especially when the sample sizes or variances of the groups are unequal, because it adjusts the degrees of freedom to account for the differences in variance. This helps prevent incorrect conclusions that could arise from violating the equal-variance assumption. The great thing is that R handles all of this automatically, so in most cases you don't need to worry about this yourself!
+
+# Correlation
+
+A t-test allows us to compare the *means* of numeric variables, but another question we often ask is about the exact *relationship* between two numeric variables. 
+
+One way to examine this is to assess whether there is a *linear* relationship between them, and we can measure this through a **correlation** analysis. Correlation tells us whether two variables tend to move together: as one increases, the other may increase or decrease.
+
+## Pearson correlation
+
+The most common measure is Pearson's correlation coefficient (denoted as *r*), which is used for two continuous variables that are approximately normally distributed. It quantifies the strength and direction of a linear relationship between variables.
+
+Pearson's correlation coefficient can range from −1 to 1:
+
+- 1 indicates a perfect *positive* linear relationship (both variables increase together; this happens only when correlating a variable with itself);
+
+- -1 indicates a perfect *negative* linear relationship (one variable increases while the other decreases);
+
+- 0 indicates no linear relationship.
+
+In short, Pearson's correlation tells us how closely the data points follow a straight line, and in which direction.
+
+In the Titanic dataset, we can use Pearson's correlation to assess whether there is a linear relationship between age and ticket fare:
+
+```{r}
+cor.test(data_age$Age, data_age$Fare, method = "pearson")
+```
+
+The test result indicates that the correlation between the two variables is statistically significant, but the coefficient itself seems rather small (0.10). In psychology, a commonly used guideline for interpreting the magnitude of Pearson correlations comes from Cohen (1988). These thresholds are:
+
+- a correlation coefficient of about 0.10 or less (in absolute terms) indicates a *weak* relationship,
+
+- a correlation coefficient of about 0.30 (in absolute terms) indicates a *moderate* relationship, and
+
+- a correlation coefficient of 0.50 or greater (in absolute terms) indicates a *strong* relationship. 
+
+In our case, this means that, although the correlation is statistically significant, its practical strength is considered weak. However, note that these thresholds are conventional rules of thumb, not strict cutoffs.
+
+Let's now visualise this relationship:
+
+```{r}
+ggplot(data_age, aes(x = Age, y = Fare)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Scatterplot of Age vs. Fare",
+       x = "Age",
+       y = "Fare") +
+  theme_classic()
+```
+
+The `ggpubr` package has a convenient function `ggscatter()` that can compute correlation and add it to the plot automatically:
+
+```{r}
+library("ggpubr")
+
+ggscatter(data_age, x = "Age", y = "Fare",
+          add = "reg.line", # add a regression line
+          conf.int = TRUE, # add a confidence interval
+          cor.coef = TRUE, # show the correlation coefficient
+          cor.method = "pearson", # method used to compute correlation
+          xlab = "Age", ylab = "Fare")
+```
+
+This function is convenient because it can also display the results of the correlation analysis directly on the plot.
+
+## Spearman correlation
+
+A Spearman correlation is used when we have ordinal variables or variables that are not normally distributed. Unlike Pearson correlation, it does not assume a linear relationship between the two variables. Instead, it measures whether the order of values in one variable tends to move in the same direction as the order of values in the other variable.
+
+This is called a **monotonic relationship**: as one variable increases, the other variable either consistently increases or consistently decreases, but not necessarily at a constant rate.
+
+Spearman correlation works by replacing each value with its rank in the dataset (smallest value = 1, next smallest value = 2, etc.) and then computing the correlation on these ranks rather than the raw values. Because of this, it can detect consistent increasing or decreasing trends, even if the relationship is curved or non-linear, and it is robust to outliers, since extreme values affect ranks less than raw values. The Spearman correlation coefficient is denoted as $\rho$ (rho).
+
+Our `Age` and `Fare` variables are not ordinal, but what about their distribution?
+
+```{r}
+ggplot(data_age, aes(x = Age)) +
+  geom_density(fill = "skyblue", alpha = 0.5) +
+  labs(x = "Age",
+       y = "Density") +
+  theme_classic()
+
+ggplot(data_age, aes(x = Fare)) +
+  geom_density(fill = "salmon", alpha = 0.5) +
+  labs(x = "Fare",
+       y = "Density") +
+  theme_classic()
+```
+
+Recall that Pearson correlation assumes that both variables are approximately normally distributed and that the relationship between them is linear. The plot above illustrates that age is roughly normal, but fare is highly skewed (many passengers paid very little, while a few paid very high fares), violating the normality assumption for Pearson. This means that, in this case, Spearman correlation is probably more appropriate.
+
+```{r}
+ggscatter(data_age, x = "Age", y = "Fare",
+          add = "reg.line", 
+          conf.int = TRUE, 
+          cor.coef = TRUE, 
+          cor.method = "spearman", # the only change compared to above
+          xlab = "Age", ylab = "Fare")
+```
+
+You may notice that `ggscatter()` labels the correlation coefficient as *R*, regardless of whether it is Pearson's $r$ or Spearman's $\rho$. You can change it like so:
+
+```{r}
+cor_test <- cor.test(data_age$Age, data_age$Fare, method = "spearman")
+rho_val <- round(as.numeric(cor_test$estimate),2)
+p_val <- round(as.numeric(cor_test$p.value),4)
+
+label_text <- paste0("\u03C1 = ", rho_val, ", p = ", p_val, ", N = ", nrow(data_age))
+
+ggscatter(data_age, x = "Age", y = "Fare",
+          add = "reg.line", 
+          conf.int = TRUE, 
+          cor.coef = F, 
+          cor.method = "spearman",
+          xlab = "Age", ylab = "Fare") + 
+  annotate("text", x = 15, y = 500, label = label_text)
+```
+
+It appears that there is a positive monotonic relationship between age and fare, although it is not very strong. In other words, as age increases, fare tends to increase, but the relationship is fairly weak.
+
+It's important to recognise that **correlation does not imply causation**. In other words, even if there is a strong correlation between two variables, it simply means that they change together, but it does not tell us why (e.g., whether one causes the other to vary). This relationship could be due to a third factor influencing both, or it might even be coincidental.
+
+# Linear regression
+
+## A bit of theory
+
+Like we said above, correlation helps us see whether two variables move together. While correlation tells us about the strength and direction of a linear relationship, it does not allow us to make predictions or quantify how much one variable changes when the other changes.
+
+This is where **linear regression** comes in. Linear regression builds on the idea of correlation by fitting a line through the data that models the relationship between one variable and one or more other variables. It allows us to estimate (or *predict*) the expected value of one variable based on the other(s), quantify the magnitude of the effect of one variable on another, and assess the strength of the relationship while controlling for additional variables in multiple regression.
+
+The variable whose effect we are examining is called the **independent variable** or **predictor**, and the variable we are trying to explain or predict is called the **dependent variable**. When a model includes only one independent variable, it is called a **simple linear regression**. If the model includes two or more predictors, it is called a **multiple linear regression**.
+
+The model equation for each individual observation in a simple linear regression looks similar to the straight-line equation you learned in algebra class:
+
+$$
+Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i
+$$
+
+In this equation,
+
+- $Y_i$ is the dependent variable for observation $i$. In other words, this is the variable we are trying to explain or predict. For each individual observation $i$ (for example, each passenger in the Titanic dataset), $Y_i$ represents the actual value of the outcome;
+
+- $X_i$ is the independent variable for observation $i$. This is the variable we believe might have an effect on $Y$. For each observation $i$, $X_i$ is the measured value of the predictor. In other words, this is the variable we are using to explain changes in the dependent variable;
+
+- $\beta_0$ is called the **intercept**. The intercept represents the expected value of $Y$ when $X = 0$. The intercept is the point where the regression line crosses the Y-axis;
+
+- $\beta_1$ is called the **slope**, and it represents the expected change in $Y$ for a one-unit change in $X$. In other words, the slope tells us how much we expect $Y$ to increase or decrease when $X$ increases by one unit. A positive slope means that as $X$ increases, $Y$ tends to increase; a negative slope means that as $X$ increases, $Y$ tends to decrease. The slope quantifies the strength and direction of the relationship;
+
+- $\varepsilon_i$ is called the **residual** or the **error term** for observation $i$, and it represents the deviation of the observed value from the regression line. In other words, the error term captures all the variation in $Y$ that isn't explained by $X$. This allows the model to account for the fact that real data rarely falls perfectly on a straight line.
+
+$\beta_0$ and $\beta_1$ are called *parameters*. Since we usually only have a sample of data (e.g., 20 participants rather than the entire population), we cannot know the true values of these parameters. Instead, we *estimate* them from the data. For this reason, a more accurate way to write an equation for the simple linear regression model is:    
+
+$$
+\hat{Y} = \hat{\beta_0} + \hat{\beta_1} X + \varepsilon
+$$
+
+The $\hat{}$ symbol on $\beta_0$ and $\beta_1$ means that these are *estimates* of the true parameters. The hat on $Y$ means that this is not the actual observed value of the variable we are interested in, but the the *predicted* value of $Y$ given $X$. 
+
+## Linear regression vs. correlation
+
+You might be thinking that a simple linear regression looks very similar to a correlation, and you'd be right! Both are based on the same idea: that there is a linear relationship between two numerical variables. In fact, the slope in simple linear regression is directly related to the Pearson correlation coefficient $r$:
+
+$$
+\beta_1 = r \frac{s_Y}{s_X}
+$$
+
+where $s_Y$ and $s_X$ are the standard deviations of $Y$ and $X$, respectively. This formula highlights that the slope is determined both by the strength of the correlation ($r$) and by the relative variability of $Y$ and $X$. It also makes clear that if $r = 0$, then the slope is 0, meaning that there is no linear relationship to capture. For this reason, in *simple* linear regression (one predictor), the p-value for $\beta_1$ and the p-value for the Pearson correlation are actually identical.
+
+This formula shows how regression extends correlation by introducing the intercept and slope. In doing so, regression not only describes the relationship but also quantifies it, making it possible to both interpret the relationship and use it for prediction.
+
+## Ordinary Least Squares
+
+One important question is how we estimate the intercept and slope of the regression line. A widely used method is called **Ordinary Least Squares (OLS)**. The idea is that we choose values of $\beta_0$ and $\beta_1$ so that the fitted line comes as close as possible to the observed data points.  
+
+Formally, OLS works by minimising the **sum of squared differences** between the observed values ($Y_i$) and the predicted values ($\hat{Y}_i$):
+
+$$
+\text{Minimise: } \sum_{i=1}^n (Y_i - \hat{Y}_i)^2
+$$
+
+where $\hat{Y}_i = \beta_0 + \beta_1 X_i$ are the predicted values from the regression line.  
+
+You might wonder why we need the sum of the *squared* differences. If we simply summed the raw differences $(Y_i - \hat{Y}_i)$, the positive and negative values would cancel each other out. By squaring the differences, we ensure that all errors are positive and that larger errors are penalised more heavily. This helps the regression line balance itself so that it fits the data points as closely as possible overall. The result is the line that minimises the total error in a mathematically efficient way.
+
+Using calculus, it can be shown that the slope and intercept that minimise the sum of squared errors are given by:  
+
+Slope:  
+
+$$
+\hat{\beta}_1 = \frac{\sum_{i=1}^{n}(X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^{n}(X_i - \bar{X})^2}
+$$
+
+Intercept:  
+
+$$
+\hat{\beta}_0 = \bar{Y} - \hat{\beta}_1 \bar{X}
+$$
+
+where $\bar{X}$ and $\bar{Y}$ are the sample means of $X$ and $Y$. 
+
+Conceptually, the slope $\hat{\beta}_1$ is essentially the covariance between $X$ and $Y$ divided by the variance of $X$, and the intercept $\hat{\beta}_0$ simply adjusts the line so that it passes through the point $(\bar{X}, \bar{Y})$, ensuring the regression line represents the center of the data. 
+
+## Model assumptions
+
+It's important to understand that linear regression typically uses OLS to estimate the slope and intercept because it tells us how the model determines the "best-fitting" line and what **assumptions** it makes when doing so. 
+
+OLS makes several key assumptions about the error terms ($\varepsilon_i$) in the regression model:
+
+- **The independence assumption**: The errors for different observations should be unrelated. That is, knowing the error for one observation should not give information about the error for another. If errors are correlated (for example, repeated measurements on the same subject), the standard OLS estimates may still be unbiased, but the standard errors and p-values will be incorrect, which can lead to misleading conclusions;
+
+- **The normality assumption**: The errors are assumed to be drawn from a normal distribution centered around zero. This ensures that the estimated coefficients follow a predictable sampling distribution, which allows us to make valid inferences using t-tests and confidence intervals. If the errors are not normally distributed, the OLS estimates of $\beta_0$ and $\beta_1$ may remain unbiased, but the usual hypothesis tests may not be accurate, especially with small sample sizes;
+
+- **The homoscedasticity (constant variance) assumption**: The spread of the errors should be roughly the same for all values of the predictor(s). If the variance changes across levels of $X$ (this situation is called *heteroscedasticity*), the OLS estimates may remain unbiased, but they are likely to be more variable than necessary, and the standard errors may be incorrect, affecting p-values and confidence intervals.
+
+It is therefore essential to check that the assumptions of the model are reasonably satisfied *before* we interpret the result of the model. If these assumptions are violated, the estimates of the coefficients, their standard errors, and associated statistical tests (like p-values and confidence intervals) may be unreliable. In such cases, we cannot meaningfully interpret the model's results, and any conclusions drawn from it may be misleading.
+
+## Simple linear regression
+
+Let's explore these ideas in practice using our Titanic dataset.  
+
+We already know that there is a weak correlation between age and fare, so now let's investigate whether age has a measurable effect on fare using simple linear regression.
+
+```{r}
+lm_fare_age <- lm(Fare ~ Age, data = data_age)
+```
+
+Remember how I mentioned that, in simple linear regression, the p-value for the slope and the p-value for the Pearson correlation are identical? Let's check if this holds in this example:
+
+```{r}
+# p-value from the model (raw scale)
+round(summary(lm_fare_age)$coefficients["Age", "Pr(>|t|)"],4)
+
+# p-value for the correlation
+round(cor.test(data_age$Age, data_age$Fare)$p.value,4)
+```
+
+Voila! This happens because the regression slope $\hat{\beta}_1$ and the correlation coefficient $r$ are mathematically linked. Note, however, that this relationship holds *only for simple regression with one predictor*. Once you include multiple predictors, the slope p-values are conditional on the other variables, and they no longer match the simple pairwise correlation.
+
+### Assumption checking
+
+Before interpreting this model, we need to check that it does not violate any key assumptions.  
+
+The independence assumption is usually addressed by the study design. In our case, it is satisfied because each passenger's data is independent of the others. The other assumptions relate to the model's residuals and fitted values, so the next step is to extract them from the model:
+
+```{r}
+data_age <- data_age %>%
+  mutate(fitted = fitted(lm_fare_age),
+         residuals = residuals(lm_fare_age))
+```
+
+The most effective way to check these assumptions is through visualisation.  
+
+To examine the normality of residuals, we can start by plotting a histogram:
+
+```{r}
+ggplot(data_age, aes(x = residuals)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(x = "Residuals",
+       y = "Frequency") +
+  theme_classic()
+```
+
+In addition to a histogram, we can also use a density plot to examine the distribution of residuals:
+
+```{r}
+ggplot(data_age, aes(x = residuals)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals",
+       y = "Density") +
+  theme_classic()
+```
+
+The histogram and density plots of the residuals show a strong right skew, because fare is heavily skewed (many low fares, few very high fares).
+
+Another common method to check normality is a QQ (quantile-quantile) plot. A QQ plot compares the quantiles of the residuals to the quantiles of a standard normal distribution. If the residuals are approximately normally distributed, the points should fall roughly along a straight diagonal line. Deviations from the line indicate departures from normality, such as skewness or heavy tails.
+
+```{r}
+ggplot(data_age, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+    labs(x = "Theoretical quantiles",
+       y = "Sample quantiles") +
+  theme_classic()
+```
+
+The QQ plot confirms our impression that the normality assumption is not satisfied.
+
+Finally, to examine homoscedasticity (constant variance of errors), we plot the residuals against the fitted values:
+
+```{r}
+ggplot(data_age, aes(x = fitted, y = residuals)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals") +
+  theme_classic()
+```
+
+On this plot, the X-axis shows the predicted (fitted) values from the regression model, and the Y-axis shows the residuals, which are the differences between the observed and predicted values.
+
+If the residuals are randomly scattered around zero with no clear pattern or systematic shape, this suggests that the variance of the errors is roughly constant, which satisfies the homoscedasticity assumption. If the residuals fan out or form a pattern, this indicates heteroscedasticity, meaning the variance of errors changes with the level of the predictor, which can affect the reliability of standard errors and statistical inference.
+
+In this case, the plot appears to indicate a slightly increasing spread of residuals for higher predicted fare values, meaning that the variance of residuals is not constant.
+
+What can we conclude? Two of the assumptions are violated, meaning that although the OLS estimates of slope and intercept might still be unbiased, the standard errors, confidence intervals, and p-values are highly likely to be unreliable. 
+
+### Transforming the dependent variable
+
+What can we do? One option could be to apply some kind of transformation (e.g., log, square root, inverse) to the `Fare` variable (because this is the variable that's causing problems). A good way to assess which transformation of the dependent variable might make the model fit better and meet OLS assumptions is to use a **Box–Cox test**.
+
+Before running the Box–Cox test, we need to check whether the dependent variable contains any zeros or negative values, because the Box-Cox transformation can only be applied to strictly positive data:
+
+```{r}
+min(data_age$Fare)
+# remove rows with 0
+data_age_pos <- data_age %>% filter(Fare > 0)
+# refit the model
+lm_fare_age_pos <- lm(Fare ~ Age, data = data_age_pos)
+```
+
+Now we should be able to apply the test:
+
+```{r}
+library("MASS")
+boxcox(lm_fare_age_pos)
+```
+
+The Box-Cox transformation is designed to make data more normally distributed and to stabilise variance in regression models. It does this by transforming the dependent variable $Y$ using a power parameter $\lambda$ (lambda). 
+
+The value of $\lambda$ determines how the data are transformed. In practice, $\lambda$ values typically fall between $-2$ and $+2$. Values outside this range often indicate that no simple power transformation will make the data sufficiently normal, and that a different modeling approach (for example, a generalised linear model) may be more appropriate. The meanings of common $\lambda$ values are as follows:
+
+- if $\lambda = 1$, no transformation is needed,
+
+- if $\lambda = 0.5$ (mild skew), take the square root of the variable,
+
+- if $\lambda = 0$ (highly skewed data), apply a natural logarithm,
+
+- if $\lambda = -0.5$ (very strong right skew), take the square root and then the reciprocal ($1/Y$),
+
+- if $\lambda = -1$ (extreme right skew), take the reciprocal transformation (also called *inverse*),
+
+- if $\lambda = 2$, square the variable, and if $\lambda = -2$, square and then invert it (note that these cases are not very common).
+
+In general, positive values of $\lambda$ suggest transformations that make the data less left-skewed by spreading out larger values, while negative values of $\lambda$ indicate transformations that make the data less right-skewed by compressing large values and stretching smaller ones.
+
+In our case, it looks like we might need the reciprocal square root transformation, so let's try that:
+
+```{r}
+data_age <- data_age %>%
+  mutate(Fare_transformed = 1 / sqrt(Fare + 1)) # note that we add 1 to avoid zero divisions
+
+lm_fare_age_trans <- lm(Fare_transformed ~ Age, data = data_age)
+```
+
+As before, our first step is to extract the residuals:
+
+```{r}
+data_age <- data_age %>%
+  mutate(fitted_trans = fitted(lm_fare_age_trans),
+         residuals_trans = residuals(lm_fare_age_trans))
+```
+
+We start with the density plot:
+
+```{r}
+ggplot(data_age, aes(x = residuals_trans)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals",
+       y = "Density") +
+  theme_classic()
+```
+
+...and continue with the QQ plot:
+
+```{r}
+ggplot(data_age, aes(sample = residuals_trans)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+    labs(x = "Theoretical quantiles",
+       y = "Sample quantiles") +
+  theme_classic()
+```
+
+Finally, we plot the residuals against fitted values:
+
+```{r}
+ggplot(data_age, aes(x = fitted_trans, y = residuals_trans)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals") +
+  theme_classic()
+```
+
+That looks better than the first model; however, it still doesn't look normal.
+
+Our Box-Cox $\lambda$ estimate landed between $-1$ and $0$, which suggests that we could also try the logarithm or reciprocal transformations for comparison. Let's apply these alternatives and see how they affect the model and its assumptions.
+
+The log transformation:
+
+```{r}
+# apply the transformation
+data_age <- data_age %>%
+  mutate(Fare_log_transformed = log(Fare + 1))
+
+# fit the model
+lm_fare_age_log_trans <- lm(Fare_log_transformed ~ Age, data = data_age)
+
+# extract residuals and fitted values
+data_age <- data_age %>%
+  mutate(fitted_log_trans = fitted(lm_fare_age_log_trans),
+         residuals_log_trans = residuals(lm_fare_age_log_trans))
+
+# create the plots
+dens_log <- ggplot(data_age, aes(x = residuals_log_trans)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals",
+       y = "Density") +
+  theme_classic()
+
+qq_log <- ggplot(data_age, aes(sample = residuals_log_trans)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+    labs(x = "Theoretical quantiles",
+       y = "Sample quantiles") +
+  theme_classic()
+
+res_vs_fit_log <- ggplot(data_age, 
+                         aes(x = fitted_log_trans, 
+                             y = residuals_log_trans)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals") +
+  theme_classic()
+
+# combine into one plot
+library("ggpubr")
+(assumptions_log <- ggarrange(dens_log, qq_log, res_vs_fit_log, 
+          ncol = 3, nrow = 1,
+          labels = c("A", "B", "C"))) 
+```
+
+This definitely looks better than the reciprocal square root transformation! What about the inverse?
+
+```{r}
+# apply the transformation
+data_age <- data_age %>%
+  mutate(Fare_inv_transformed = 1 / (Fare + 1))
+
+# fit the model
+lm_fare_age_inv_trans <- lm(Fare_inv_transformed ~ Age, data = data_age)
+
+# extract residuals and fitted values
+data_age <- data_age %>%
+  mutate(fitted_inv_trans = fitted(lm_fare_age_inv_trans),
+         residuals_inv_trans = residuals(lm_fare_age_inv_trans))
+
+# create the plots
+dens_inv <- ggplot(data_age, aes(x = residuals_inv_trans)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals",
+       y = "Density") +
+  theme_classic()
+
+qq_inv <- ggplot(data_age, aes(sample = residuals_inv_trans)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+    labs(x = "Theoretical quantiles",
+       y = "Sample quantiles") +
+  theme_classic()
+
+res_vs_fit_inv <- ggplot(data_age, 
+                         aes(x = fitted_inv_trans, 
+                             y = residuals_inv_trans)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals") +
+  theme_classic()
+
+(assumptions_inv <- ggarrange(dens_inv, qq_inv, res_vs_fit_inv, 
+          ncol = 3, nrow = 1,
+          labels = c("A", "B", "C"))) 
+```
+
+It looks like the log transformation produced the best improvement in our model (although note that the model is still not ideal)! So, let's continue our analysis using this model.
+
+Notice that up until now, we haven't examined any of the regression results. We've spent this time focusing on ensuring that the model meets the assumptions of linear regression. A key lesson here is: **never rush into interpreting results until you are confident that your model is not deficient**. A poorly fitting model can lead to misleading conclusions, even if the estimated coefficients look "reasonable".
+
+### Model interpretation
+
+```{r}
+summary(lm_fare_age_log_trans)
+```
+
+The first thing to keep in mind is that we transformed the dependent variable, so the model equation now looks like this:
+
+$$
+\log(\text{Fare}) = \beta_0 + \beta_1 \cdot \text{Age} + \varepsilon
+$$
+This means that we need to interpret everything with the log transformation in mind:
+
+- The intercept $\beta_0$ is the expected `log(Fare)` when `Age` is 0. This value usually isn't very meaningful on its own (since an age of 0 doesn't make sense here), but it's important to understand what it represents conceptually;
+
+- The slope $\beta_1$ represents the expected change in `log(Fare)` for a one-unit increase in `Age`. This is crucial: unlike our earlier model, this one doesn't predict the fare itself; it predicts the *log* of fare. If we want to express the effect in terms of the original fare values, we can exponentiate the coefficient, like so:
+
+$$
+\text{Fare} = e^{\beta_0} \times e^{\beta_1 \times \text{Age}} \times e^{\varepsilon}
+$$
+Notice that now the effect of `Age` is inside an exponent. This means that each one-unit increase in `Age` *multiplies* the expected value of `Fare` by $e^{\beta_1}$. That's very different from a raw (non-log) model, where each extra year adds a fixed amount to `Fare`. Here, each extra year *multiplies* `Fare` by a constant ratio. In other words, without the log transformation, the effect is *additive* (e.g., each year adds $2 to the fare); with the log transformation, the effect is *multiplicative* (e.g., each year increases the fare by 5%). 
+
+Because the effect is multiplicative, it makes more sense to express it as a percentage change rather than a change in raw currency units. The proportional change is given by $e^{\beta_1} - 1$:
+
+- if $e^{\beta_1} = 1.05$, then `Fare` increases by 5% per year of age;
+
+- if $e^{\beta_1} = 0.95$, then `Fare` decreases by 5% per year of age;
+
+So, if we want to express the slope as a percent change, we calculate:
+
+$$
+(\exp(\beta_1) - 1) \times 100
+$$
+To exponentiate the intercept and the slope, we can do:
+
+```{r}
+# intercept
+(b0 <- exp(coef(lm_fare_age_log_trans)[1]))
+
+# slope
+(b1 <- exp(coef(lm_fare_age_log_trans)[2]))
+```
+
+This means that, when `Age` is 0, the expected `Fare` is approximately `r round(b0, 2)`, and each one-year increase in `Age` multiplies the expected `Fare` by `r round(b1, 2)`, which corresponds to an approximate 1% increase per year. In other words, older passengers tend to pay slightly higher fares, and this effect is statistically significant!
+
+## Multiple linear regression
+
+Multiple linear regression allows us to investigate how *several predictors simultaneously* influence a dependent variable. Using the Titanic dataset, we can examine the relationship between `Fare` and`Age`, `Pclass` (ticket class) and `Sex`.
+
+The multiple regression equation can be written as:
+
+$$
+Fare_i = \beta_0 + \beta_1 \cdot Age_i + \beta_2 \cdot Pclass_i + \beta_3 \cdot Sex_i + \epsilon_i
+$$
+Here,
+
+- $Fare_i$ is the fare of passenger $i$ (dependent variable);
+
+- $Age_i$ is the age of passenger $i$ (continuous predictor);
+
+- $Pclass_i$ is the ticket class of passenger $i$ (categorical predictor; coded 1, 2, 3);
+
+- $Sex_i$ is the sex of passenger $i$ (categorical predictor; female vs. male);
+
+- $\beta_0$ is the intercept (expected fare when all predictors are 0 or reference levels);
+
+- $\beta_1$, $\beta_2$, and $\beta_3$ are regression coefficients for each predictor. Each coefficient represents the effect of that predictor while holding the other predictors constant;
+
+- $\epsilon_i$ is the error term for passenger $i$, assumed to be independent, normally distributed with mean 0 and constant variance.
+
+Before we fit the model, let's make sure that our categorical predictors are coded as factors:
+
+```{r}
+data_age <- data_age %>%
+  mutate(Pclass = factor(Pclass),
+         Sex = factor(Sex))
+
+levels(data_age$Sex)
+levels(data_age$Pclass)
+```
+
+### Contrast coding
+
+In regression, categorical variables (factors) need to be represented numerically so the model can interpret them. This process is called **contrast coding**, and it determines how the levels of a factor are compared in the regression. The choice of coding has an impact on what is used as the reference (or baseline) category, which comparisons are made, and how coefficients are interpreted. Without proper coding the model will default to an arbitrary reference category, and you will likely interpret the coefficients incorrectly. It is therefore **critically important to (a) understand how contrast coding works, and (b) choose the contrast coding scheme that aligns with the goals of your model**.
+
+The most common coding schemes include:
+
+- **treatment contrasts** (also called **dummy coding**), where one level is coded as 0 (the reference) and the other as 1. The regression coefficient then represents the difference between that level and the reference level. For example, if we code females as 0 and males as 1 for our variable `Sex`, the coefficient will tell us how much the outcome changes for males compared to females;
+
+- **sum contrasts** (also called **effect coding**), where levels are coded symmetrically around 0 and the sum of codes across all levels is 0. The regression coefficient then represents the deviation from the grand mean rather than a reference category. For instance, if we code females as $-0.5$ and males as $+0.5$, the coefficient will tell us how much males differ from the grand mean (rather than from females);
+
+- **repeated contrasts** (for more than 2 levels), where each level is compared to the previous one. This approach allows us to compare adjacent levels of the ordinal factor step by step, rather than comparing everything to a single reference category. This coding scheme is useful for ordinal variables where order matters (like ticket class) because it makes interpretation aligned with "stepwise" differences between levels. For example, for the variable `Pclass`, we can define repeated contrasts as follows: Contrast C1 compares Class 2 ($+1$) to Class 1 ($-1$), and Contrast C2 compares Class 3 ($+1$) to Class 2 ($-1$). 
+
+There are many other types of contrast coding schemes, and you can even define a custom scheme tailored to your specific research questions. This flexibility is what makes contrast coding such a powerful tool. Please see these tutorials to learn more: [here](https://doi.org/10.1016/j.jml.2019.104038) and [here](https://marissabarlaz.github.io/portfolio/contrastcoding/).
+
+Fow now, let's define contrasts for `Sex` (treatment) and `Pclass` (repeated):
+
+```{r}
+# treatment coding for Sex: female = 0, male = 1
+data_age <- data_age %>%
+  mutate(Sex_treat = ifelse(Sex == "male", 1, 0))
+
+# Pclass as ordered factor with repeated contrasts
+data_age$Pclass <- factor(data_age$Pclass, levels = c(1,2,3), ordered = TRUE)
+contrasts(data_age$Pclass) <- contr.sdif(3) # function from package "MASS"
+```
+
+We are now ready to fit the model!
+
+```{r}
+lm_fare_multi <- lm(Fare ~ Age + Sex_treat + Pclass, data = data_age)
+```
+
+### Checking assumptions and transforming the DV
+
+First, we extract the residuals:
+
+```{r}
+data_age <- data_age %>%
+  mutate(fitted_multi = fitted(lm_fare_multi),
+         residuals_multi = residuals(lm_fare_multi))
+```
+
+Residual density:
+
+```{r}
+ggplot(data_age, aes(x = residuals_multi)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals", y = "Density") +
+  theme_classic()
+```
+
+QQ plot:
+
+```{r}
+ggplot(data_age, aes(sample = residuals_multi)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+  labs(x = "Theoretical quantiles", y = "Sample quantiles") +
+  theme_classic()
+```
+
+Residuals vs. fitted values:
+
+```{r}
+ggplot(data_age, aes(x = fitted_multi, y = residuals_multi)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals") +
+  theme_classic()
+```
+
+Now, what's happening with the residuals vs. fitted values plot? Why do we suddenly have two clouds of data points? When you include categorical predictors (like `Sex` or `Pclass`) in your regression, the fitted values are not continuous for all observations; instead, they take on discrete values corresponding to each combination of predictor levels.
+
+Each cloud in the plot therefore represents a group of observations that share the same combination of categorical predictors. Within each cloud, the residuals vary because of the continuous predictors (like `Age`) and the individual variation.
+
+This is completely normal and does not necessarily indicate a violation of assumptions, as long as the residuals within each cloud appear randomly scattered around zero and roughly have constant variance.
+
+We can check which of the categorical variables causes this behaviour by adding colour to the plots:
+
+```{r}
+# residuals vs fitted, colored by Sex
+ggplot(data_age, aes(x = fitted_multi, y = residuals_multi, color = factor(Sex))) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "black", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals",
+       color = "Sex") +
+  theme_classic()
+
+# residuals vs fitted, colored by Pclass
+ggplot(data_age, aes(x = fitted_multi, y = residuals_multi, color = factor(Pclass))) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "black", linetype = "dashed") +
+  labs(x = "Fitted values",
+       y = "Residuals",
+       color = "Pclass") +
+  theme_classic()
+```
+
+Very interesting! We can see that this effect is largely driven by the influence of `Pclass` on `Fare`, which makes perfect sense, given what we know about the historical ticket prices aboard the Titanic.
+
+Overall, our diagnostic plots are not perfect, but they don't look too bad either! The next logical step is to check what the Box-Cox test suggests in terms of transforming the dependent variable:
+
+```{r}
+# remember the test doesn't work on values that are not positive
+data_age_pos <- data_age_pos %>%
+  mutate(Sex_treat = ifelse(Sex == "male", 1, 0))
+
+data_age_pos$Pclass <- factor(data_age_pos$Pclass, levels = c(1,2,3), ordered = TRUE)
+contrasts(data_age_pos$Pclass) <- contr.sdif(3)
+
+lm_fare_multi_pos <- lm(Fare ~ Age + Sex_treat + Pclass, data = data_age_pos)
+boxcox(lm_fare_multi_pos)
+```
+
+This result makes sense: we already saw that the log transformation worked best in the simple linear regression, since `Fare` is strongly right-skewed. Let's now refit our multiple regression model using the log-transformed Fare as the dependent variable...
+
+```{r}
+lm_fare_multi_log <- lm(log(Fare + 1) ~ Age + Sex_treat + Pclass, data = data_age)
+```
+
+... and check if this model satisfies the assumptions:
+
+```{r}
+data_age <- data_age %>%
+  mutate(fitted_multi_log = fitted(lm_fare_multi_log),
+         residuals_multi_log = residuals(lm_fare_multi_log))
+```
+
+Residual density:
+
+```{r}
+ggplot(data_age, aes(x = residuals_multi_log)) +
+  geom_density(fill = "lightblue", color = "blue", alpha = 0.5, size = 1) +
+  labs(x = "Residuals", y = "Density") +
+  theme_classic()
+```
+
+QQ plot:
+
+```{r}
+ggplot(data_age, aes(sample = residuals_multi_log)) +
+  stat_qq() +
+  stat_qq_line(col = "red") +
+  labs(x = "Theoretical quantiles", y = "Sample quantiles") +
+  theme_classic()
+```
+
+Residuals vs. fitted values:
+
+```{r}
+ggplot(data_age, aes(x = fitted_multi, y = residuals_multi_log)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals") +
+  theme_classic()
+```
+
+Looks better! So, let's continue working with this model, although it's worth noting that we can see a few outliers in the data. If we had any reason to believe that these observations were errors or corrupted entries, it would make sense to remove them to improve the model's reliability.
+
+### Model interpretation
+
+We are now ready to look at the output of our model!
+
+```{r}
+summary(lm_fare_multi_log)
+```
+
+It appears that we can reject the null hypothesis for each comparison. 
+
+Like with the simple linear regression, because the dependent variable is `log(Fare)`, the effects are multiplicative rather than additive, meaning that the model equation can be written as:
+
+$$
+log(Fare) = 3.70 - 0.01 \cdot Age - 0.29 \cdot Sex_{male} - 1.25 \cdot Pclass_{2-1} - 0.52 \cdot Pclass_{3-2} + \epsilon
+$$
+Exponentiating the coefficients gives us the proportional (percentage) interpretation:
+
+```{r}
+exp_coef <- exp(coef(lm_fare_multi_log))
+exp_coef
+```
+
+This gives us approximate multiplicative effects on the original `Fare` scale:
+
+- *Intercept* ($\beta_0$): when all predictors are at their reference levels (a newborn female passenger in 1st class), the expected fare is about `r round(exp_coef[1], 2)` units;
+
+- *Age* ($\beta_1$): Each additional year of age multiplies the expected `Fare` by $e^{-0.0103} \approx 0.99$, corresponding to about a 1% decrease in `Fare` per year of age (holding other variables at baseline). In other words, the younger the passenger, the higher the fare (but note that this is not a very large effect);
+
+- *Sex* ($\beta_2$): Males (coded as 1) have expected fares that are $e^{-0.2869} \approx 0.75$ times those of females. This means that, on average, males paid 25% less than females, controlling for `Age` and `Pclass`;
+
+- *Pclass (2 vs. 1)*: Passengers in 2nd class have expected fares that are $e^{-1.2542} \approx 0.29$ times those of 1st class. In other words, all else equal, fares in 2nd class were approximately 71% lower than in 1st class;
+
+- *Pclass (3 vs. 2)*: Passengers in 3rd class have expected fares that are $e^{-0.5163} \approx 0.60$ times those of 2nd class. That is, controlling for `Age` and `Sex`, fares in 3rd class were about 40% lower than in 2nd class.
+
+Overall, this model shows that `Fare` decreases (slightly) with `Age`, males tend to pay less than females, and ticket prices drop substantially with lower passenger class. These results align well with historical expectations for the Titanic dataset.
+
+### Writing data
+
+As a final note, we have added several new variables to the dataset throughout this analysis (residuals, fitted values, transformed variables, etc.). If you want to save the edited dataset for future use, you can do so like this:
+
+```{r}
+write.csv(data_age, file = "titanic_data_edited.csv", row.names = FALSE)
+```
+
+You can also save your data (or model) in **RDS format**. The RDS format is useful because it allows you to save any R object in a way that preserves all attributes, types, and structures. This is particularly convenient when you want to reload the object exactly as it was, save large or complex objects, and avoid converting everything to CSV or other formats that can lose metadata:
+
+```{r}
+saveRDS(lm_fare_multi_log, file = "lm_fare_multi_log.rds")
+```
+
+To load it back, you can use:
+
+```{r}
+lm_fare_multi_log <- readRDS("lm_fare_multi_log.rds")
+```
+
+It is a good practice to save the dataset used in your analysis (and models if they are large and take a long time to run) and make it available alongside your paper and code. This ensures reproducibility and allows others (and your future self) to understand exactly what was done. Make sure to document all changes made to the dataset (e.g., added variables, transformations, or filtered rows) and comment your code thoroughly so that each step of your analysis is clear and reproducible. By doing so, you create a transparent workflow that is easier to revisit, validate, and share.
+
+# Summary
+
+We've now reached the end of our short course! Let's take a moment to review what we've covered.
+
+We began by exploring the **basics of R**: using R as a computational tool, creating variables and assigning values, understanding different data types, working with data frames, and loading and saving data in R.
+
+Next, we moved on to computing **simple descriptive statistics** and creating **basic plots** to visualise your data.
+
+We then covered **inferential statistics**, both in theory and in practice:
+
+- *chi-square tests* for categorical data,
+
+- *t-tests* (one-sample, two-sample, paired samples) for numerical data,
+
+- *correlations* (Pearson and Spearman) to examine relationships between numeric variables, and 
+
+- *linear regression* (simple and multiple), including model assumptions, transformations, and interpretation.
+
+This was a lot of material, so don't worry if you feel a bit overwhelmed. You can revisit this tutorial, run the analyses on your own machine, and experiment with other datasets. A great way to reinforce learning is to pick a different dataset and try conducting a full analysis using this tutorial as a template. This will help solidify both the theoretical concepts and practical skills you've learned.
