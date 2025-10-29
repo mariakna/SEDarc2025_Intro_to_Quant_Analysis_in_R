@@ -1777,3 +1777,45 @@ We then covered **inferential statistics**, both in theory and in practice:
 - *linear regression* (simple and multiple), including model assumptions, transformations, and interpretation.
 
 This was a lot of material, so don't worry if you feel a bit overwhelmed. You can revisit this tutorial, run the analyses on your own machine, and experiment with other datasets. A great way to reinforce learning is to pick a different dataset and try conducting a full analysis using this tutorial as a template. This will help solidify both the theoretical concepts and practical skills you've learned.
+
+# Further reading and resources
+
+In addition to the links provided above (see individual chapters for more details), I recommend the following resources.  
+
+Note that there are *many* excellent tutorials and books on statistics and R so you might find others that you prefer.
+
+## General R and Data Analysis
+
+- **R Cookbook (2nd Edition):** Practical solutions for common R problems, from installation to model fitting — [https://rc2e.com/](https://rc2e.com/)
+
+- **Efficient R Programming:** Tips for writing fast, readable, and efficient R code — [https://csgillespie.github.io/efficientR/](https://csgillespie.github.io/efficientR/)
+
+- **R for Data Science:** An essential, hands-on introduction to tidy data workflows — [https://r4ds.had.co.nz/](https://r4ds.had.co.nz/)
+
+- **Getting Started with R:** A concise beginner-friendly introduction — [https://ilustat.com/shared/Getting-Started-in-R.pdf](https://ilustat.com/shared/Getting-Started-in-R.pdf)
+
+## R Markdown
+
+- **R Markdown:** How to create dynamic and reproducible reports — [https://rmarkdown.rstudio.com/](https://rmarkdown.rstudio.com/)
+
+## Visualisation
+
+  - **R Graphics Cookbook** — [https://r-graphics.org/](https://r-graphics.org/)
+  
+  - **ggplot2 Gallery** — [https://r-graph-gallery.com/ggplot2-package.html](https://r-graph-gallery.com/ggplot2-package.html)
+
+## Statistics
+
+- **Learning Statistics with R** (Danielle Navarro) — [https://learningstatisticswithr.com/](https://learningstatisticswithr.com/)
+
+- **Modern Statistics with R** — [https://www.modernstatisticswithr.com/](https://www.modernstatisticswithr.com/)
+
+- **Introduction to Frequentist Statistics** (Shravan Vasishth) — [https://vasishth.github.io/IntroductionStatistics/](https://vasishth.github.io/IntroductionStatistics/)
+
+- **Introduction to Bayesian Statistics** (Shravan Vasishth & Bruno Nicenboim) — [https://bruno.nicenboim.me/bayescogsci/](https://bruno.nicenboim.me/bayescogsci/)
+
+## Community and Learning opportunities
+
+- Ask Questions on **Stack Overflow** — [https://stackoverflow.com/questions](https://stackoverflow.com/questions)
+
+- **Statistics Summer School:** An *amazing* free summer school in Potsdam (Germany), held annually in September — [https://vasishth.github.io/smlp2026/](https://vasishth.github.io/smlp2026/)
